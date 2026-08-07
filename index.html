@@ -804,7 +804,7 @@ input,select,textarea{border:1px solid #b7c5d6!important;border-radius:5px!impor
   }
   async function allDbUsers() {
     if (!window.sbFetch) return [];
-    try { const s=JSON.parse(sessionStorage.getItem('registryPosSession')||'null'); if(!s?.access_token) return []; } catch(_) { return []; }
+    try { const s=JSON.parse(sessionStorage.getItem('registryPosSession')||'null'); if(!s?.username) return []; } catch(_) { return []; }
     try {
       const res = await window.sbFetch('profiles?select=username,role,status,mfa&order=username.asc');
       if (!res.ok) return [];
@@ -845,7 +845,7 @@ input,select,textarea{border:1px solid #b7c5d6!important;border-radius:5px!impor
         alert('This account is not active. Contact an administrator.');
         return;
       }
-      sessionStorage.setItem('registryPosSession', JSON.stringify({ access_token: authData.access_token, refresh_token: authData.refresh_token, username: profile?.username || username, role: profile?.role || 'User' }));
+      sessionStorage.setItem('registryPosSession', JSON.stringify({ username: profile?.username || username, role: profile?.role || 'User', loggedInAt: Date.now() }));
       const welcomeName = document.getElementById('switchboard-user');
       if (welcomeName) welcomeName.textContent = profile?.username || username;
       window.currentPrototypeUser = { username: profile?.username || username, role: profile?.role || 'User' };
@@ -866,7 +866,7 @@ input,select,textarea{border:1px solid #b7c5d6!important;border-radius:5px!impor
   (function restoreSession(){
     try {
       const session = JSON.parse(sessionStorage.getItem('registryPosSession') || 'null');
-      if (session?.access_token && session?.username) {
+      if (session?.username) {
         window.currentPrototypeUser = { username: session.username, role: session.role || 'User' };
         const welcomeName = document.getElementById('switchboard-user');
         if (welcomeName) welcomeName.textContent = session.username;
@@ -885,9 +885,9 @@ input,select,textarea{border:1px solid #b7c5d6!important;border-radius:5px!impor
   document.getElementById('logoff-btn')?.addEventListener('click', async () => {
     const session = JSON.parse(sessionStorage.getItem('registryPosSession') || 'null');
     sessionStorage.removeItem('registryPosSession');
-    if (session?.access_token && window.SB_URL && window.SB_KEY) {
+    if (session?.username && window.SB_URL && window.SB_KEY) {
       try {
-        await fetch(window.SB_URL + '/auth/v1/logout', { method: 'POST', headers: { 'apikey': window.SB_KEY, 'Authorization': 'Bearer ' + session.access_token } });
+        await fetch(window.SB_URL + '/auth/v1/logout', { method: 'POST', headers: { 'apikey': window.SB_KEY } });
       } catch (_) {}
     }
     document.getElementById('login-password').value = '';
@@ -1617,7 +1617,7 @@ document.getElementById('client-export-btn')?.addEventListener('click',()=>{cons
   window.SBKEY = SB_KEY;  // alias for window.SBKEY checks
 
   function currentAccessToken() {
-    try { return JSON.parse(sessionStorage.getItem('registryPosSession') || 'null')?.access_token || null; } catch (_) { return null; }
+    try { return JSON.parse(sessionStorage.getItem('registryPosSession') || 'null')?.username || null; } catch (_) { return null; }
   }
 
   function sbHeaders(extra) {
